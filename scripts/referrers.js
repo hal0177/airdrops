@@ -2,7 +2,8 @@
 
 const fs = require("fs")
 const dotenv = require("dotenv")
-const ERC20 = require("ERC20")
+const ERC20 = require("../ERC20")
+const Web3 = require("web3")
 
 dotenv.config()
 
@@ -10,10 +11,12 @@ const PK = process.env.PK
 const PROVIDER = process.env.PROVIDER
 const FREE_ADDR = process.env.FREE_ADDR
 
-const data = fs.readFileSync("../prepared/correctAddresses.json")
+const data = fs.readFileSync("./prepared/sortedByRef.json")
 const { FREEMOON } = JSON.parse(data)
 
 const addresses = FREEMOON.map(entry => entry.I)
+
+let airdropping
 
 const connect = async () => {
   const web3 = new Web3(PROVIDER)
@@ -25,14 +28,16 @@ const connect = async () => {
 
 
 const startRewarding = async () => {
-    const { web3, account, FREE } = await connect()
-    
     let current = 0
     let finalIndex = addresses.length - 1
 
     let success = [], fail = []
     
-    const airdropping = setInterval(async () => {
+    airdropping = setInterval(async () => {
+        if(current >= finalIndex) return
+        console.log(`Airdropping batch starting ${ current }`)
+        const { web3, account, FREE } = await connect()
+
         let currentBatchEnd = current + 10
         currentBatchEnd = currentBatchEnd > finalIndex ? finalIndex : currentBatchEnd
         let batchSize = currentBatchEnd - current
@@ -41,7 +46,11 @@ const startRewarding = async () => {
         let requests = []
 
         for(let i = 0; i < batchSize + 1; i++) {
-            requests.push(FREE.methods.transfer(addresses[currentCopy + i], web3.utils.toWei("5"), { from: account, gasPrice: web3.utils.toWei("4", "gwei") }))
+            requests.push(FREE.methods.transfer(addresses[currentCopy + i], web3.utils.toWei("5000")).send({
+                from: account,
+                gasPrice: web3.utils.toWei("4", "gwei"),
+                value: web3.utils.toWei("1", "gwei")
+            }))
         }
         
         const results = await Promise.allSettled(requests)
@@ -54,13 +63,18 @@ const startRewarding = async () => {
         if(currentCopy >= finalIndex) {
             clearInterval(airdropping)
             const results = JSON.stringify({ SUCCESS: success, FAIL: fail }, null, 2)
-            fs.writeFileSync("./all-results.json", results)
+            fs.writeFileSync("./results/referrers-results.json", results)
         }
     }, 13000)
 }
 
 
 
+try {
+    startRewarding()
+} catch(err) {
+    clearInterval(airdropping)
+}
 
 
 
