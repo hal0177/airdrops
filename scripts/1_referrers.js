@@ -12,12 +12,13 @@ const PROVIDER = process.env.PROVIDER
 const FREE_ADDR = process.env.FREE_ADDR
 
 const FREE_REWARD = "5000"
-const FSN_REWARD = "0.001"
+const FSN_REWARD = "1"
 
 const data = fs.readFileSync("./prepared/sortedByRef.json")
 const { FREEMOON } = JSON.parse(data)
 
-const addresses = FREEMOON.map(entry => entry.I)
+const allAddresses = FREEMOON.map(entry => entry.I)
+const addresses = allAddresses.slice(10)
 
 let airdropping
 
@@ -27,8 +28,7 @@ const connect = async () => {
   const sender = account.address
   await web3.eth.accounts.wallet.add(account)
   const FREE = new web3.eth.Contract(ERC20, FREE_ADDR)
-  const txCount = await web3.eth.getTransactionCount(sender)
-  return { web3, sender, FREE, txCount }
+  return { web3, sender, FREE }
 }
 
 
@@ -39,6 +39,9 @@ const startRewarding = async () => {
   let freeSuccess = [], freeFail = []
   let fsnSuccess = [], fsnFail = []
 
+  const init = await connect()
+  let txCount = await init.web3.eth.getTransactionCount(init.sender)
+
   airdropping = setInterval(async () => {
     if(current >= finalIndex) return
 
@@ -48,7 +51,7 @@ const startRewarding = async () => {
     current = currentBatchEnd + 1
 
     console.log(`Connecting ...`)
-    const { web3, sender, FREE, txCount } = await connect()
+    const { web3, sender, FREE } = await connect()
     console.log(`Connected.`)
 
     console.log(`Airdropping batch ${ currentBatchStart } - ${ currentBatchEnd } / ${ finalIndex }`)
@@ -56,22 +59,25 @@ const startRewarding = async () => {
     let freeRequests = [], fsnRequests = []
 
     for(let i = 0; i < batchSize; i++) {
+      console.log(sender)
       let beneficiary = addresses[i]
       freeRequests.push(FREE.methods.transfer(beneficiary, web3.utils.toWei(FREE_REWARD, "ether")).send({
         from: sender,
-        gasLimit: 1000000,
-        gasPrice: web3.utils.toWei("3", "gwei"),
+        gasLimit: "0xf4240",
+        gasPrice: "0xb2d05e00",
         nonce: txCount + i
       }))
       fsnRequests.push(web3.eth.sendTransaction({
         from: sender,
         to: beneficiary,
         value: web3.utils.toWei(FSN_REWARD, "ether"),
-        gasLimit: 21000,
-        gasPrice: web3.utils.toWei("3", "gwei"),
+        gasLimit: "0x5208",
+        gasPrice: "0xb2d05e00",
         nonce: txCount + i + 1
       }))
     }
+
+    txCount += (2 * batchSize)
     
     const freeResults = await Promise.allSettled(freeRequests)
     const fsnResults = await Promise.allSettled(fsnRequests)
@@ -85,6 +91,9 @@ const startRewarding = async () => {
     freeFail = freeFail.concat(freeFailures)
     fsnSuccess = fsnSuccess.concat(fsnSuccesses)
     fsnFail = fsnFail.concat(fsnFailures)
+
+    console.log(`FREE tx's: Success: ${ freeSuccess.length }, Fail: ${ freeFail.length }`)
+    console.log(`FSN tx's: Success: ${ fsnSuccess.length }, Fail: ${ fsnFail.length }`)
 
     if(currentBatchEnd >= finalIndex) {
       clearInterval(airdropping)
