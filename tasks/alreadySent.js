@@ -53,8 +53,20 @@ const buildNew = async () => {
   console.log(`Length before: ${ FREEMOON.length }`)
 
   let formatted = []
-  
-  for(let i = 0; i < FREEMOON.length; i++) {}
+
+  for(let i = 0; i < FREEMOON.length; i++) {
+    let fmn = FREEMOON[i].I.toLowerCase()
+    if(!receivers.includes(fmn)) {
+      formatted.push(fmn)
+    }
+  }
+
+  const reduced = JSON.stringify({ FREEMOON: formatted }, null, 2)
+
+  fs.writeFileSync("./prepared/withoutFsnReceivers.json", reduced)
+
+  console.log(`Length after: ${ formatted.length }`)
+}
 
 buildNew()
 
