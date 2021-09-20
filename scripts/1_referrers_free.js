@@ -85,7 +85,7 @@ const startRewarding = async () => {
       const results = JSON.stringify({ SUCCESS: freeSuccess, FAIL: freeFail }, null, 2)
       fs.writeFileSync("./results/referrers-results.json", results)
     }
-  }, 13000)
+  }, 15000)
 }
 
 

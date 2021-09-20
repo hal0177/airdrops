@@ -5,7 +5,7 @@
   "main": "getCount.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "1_referrers": "node scripts/1_referrers.js",
+    "referrers": "node scripts/1_referrers_free.js",
     "2_randoms": "node scripts/2_randoms.js",
     "3_all": "node scripts/3_all.js"
   },
