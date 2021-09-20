@@ -55,8 +55,8 @@ const buildNew = async () => {
   let formatted = []
 
   for(let i = 0; i < FREEMOON.length; i++) {
-    let fmn = FREEMOON[i].I.toLowerCase()
-    if(!receivers.includes(fmn)) {
+    let fmn = FREEMOON[i]
+    if(!receivers.includes(fmn.I.toLowerCase())) {
       formatted.push(fmn)
     }
   }
